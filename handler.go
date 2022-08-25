@@ -9,7 +9,6 @@ import (
 
 	_ "embed"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,8 +19,7 @@ const prefix = "app"
 
 // Handler handles App requests
 type Handler struct {
-	outlog *log.Logger
-	errlog *log.Logger
+	logger *logging.Logger
 
 	servePath string
 }
@@ -34,13 +32,13 @@ const indexFileName = "index.html"
 const indexFileLength = len(indexFileName) - 1
 
 func (handler *Handler) notFound(writer http.ResponseWriter, resource string, servePath string) {
-	handler.errlog.Printf("Could not read resource at: %v\n", resource)
+	handler.logger.Error("Could not read resource at: %v\n", resource)
 
 	indexStartIndex := len(resource) - 1 - indexFileLength
 	if indexStartIndex > 0 && resource[indexStartIndex:] == indexFileName {
 		writer.WriteHeader(http.StatusNotFound)
 		if _, err := writer.Write(notFoundFile); err != nil {
-			handler.errlog.Printf("%v", err)
+			handler.logger.Error("%v", err)
 			http.Error(writer, fmt.Sprintf("Could not retrieve %v", resource), http.StatusInternalServerError)
 		}
 		return
@@ -63,7 +61,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 	}
 
 	if _, err = writer.Write(response); err != nil {
-		handler.errlog.Printf("Could not write response: %v", err)
+		handler.logger.Error("Could not write response: %v", err)
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -86,8 +84,7 @@ func New() *Handler {
 	}
 
 	return &Handler{
-		outlog:    logging.NewLog(prefix),
-		errlog:    logging.NewError(prefix),
+		logger:    logging.New(prefix),
 		servePath: servePath,
 	}
 }
