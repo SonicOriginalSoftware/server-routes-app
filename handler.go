@@ -18,8 +18,7 @@ const Prefix = "app"
 
 // Handler handles App requests
 type Handler struct {
-	logger *logging.Logger
-
+	logger    *logging.Logger
 	servePath string
 }
 
