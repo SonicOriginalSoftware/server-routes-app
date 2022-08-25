@@ -3,17 +3,18 @@
 package app
 
 import (
-	"git.nathanblair.rocks/server/logging"
-
 	_ "embed"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"git.nathanblair.rocks/server/logging"
 )
 
-const prefix = "app"
+// Prefix is the name used to identify the service
+const Prefix = "app"
 
 // Handler handles App requests
 type Handler struct {
@@ -64,11 +65,6 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 	}
 }
 
-// Prefix is the subdomain prefix
-func (handler *Handler) Prefix() string {
-	return prefix
-}
-
 // New returns a new Handler
 func New() *Handler {
 	servePath, isSet := os.LookupEnv("APP_SERVE_PATH")
@@ -77,7 +73,7 @@ func New() *Handler {
 	}
 
 	return &Handler{
-		logger:    logging.New(prefix),
+		logger:    logging.New(Prefix),
 		servePath: servePath,
 	}
 }
