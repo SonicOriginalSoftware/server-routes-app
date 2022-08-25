@@ -3,7 +3,7 @@
 package app
 
 import (
-	"server/logging"
+	"git.nathanblair.rocks/server/logging"
 
 	_ "embed"
 	"fmt"

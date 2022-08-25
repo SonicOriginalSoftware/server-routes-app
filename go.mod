@@ -1,7 +1,7 @@
-module routes/app
+module git.nathanblair.rocks/routes/app
 
 go 1.19
 
 require (
-	server v0.0.0
+	git.nathanblair.rocks/server v0.0.0
 )
