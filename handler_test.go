@@ -15,7 +15,6 @@ import (
 
 var (
 	certs            []tls.Certificate
-	port             = "4430"
 	rootPath         = ""
 	cssFileContents  = `* { padding: 0; margin: 0; }`
 	jsFileContents   = `console.log("Hello, world!")`
@@ -45,7 +44,6 @@ var (
 )
 
 func TestHandler(t *testing.T) {
-	t.Setenv("PORT", port)
 	route := fmt.Sprintf("localhost/%v/", app.Name)
 	t.Setenv(fmt.Sprintf("%v_SERVE_ADDRESS", strings.ToUpper(app.Name)), route)
 
@@ -53,7 +51,7 @@ func TestHandler(t *testing.T) {
 		t.Fatalf("%v\n", err)
 	}
 
-	ctx, cancelContext := context.WithCancel(context.Background())
+	ctx, cancelFunction := context.WithCancel(context.Background())
 
 	exitCode, address := lib.Run(ctx, certs)
 	defer close(exitCode)
@@ -64,7 +62,7 @@ func TestHandler(t *testing.T) {
 		t.Fatalf("%v\n", err)
 	}
 
-	cancelContext()
+	cancelFunction()
 
 	if returnCode := <-exitCode; returnCode != 0 {
 		t.Fatalf("Server errored: %v", returnCode)

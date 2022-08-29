@@ -63,7 +63,6 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 func New(fsys fs.FS) (handler *Handler, err error) {
 	logger := logging.New(Name)
 	handler = &Handler{logger, fsys}
-
 	handlers.Register(Name, handler, logger)
 
 	return
