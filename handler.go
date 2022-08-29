@@ -3,76 +3,68 @@
 package app
 
 import (
-	_ "embed"
 	"fmt"
+	"io/fs"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 
+	"git.nathanblair.rocks/server/handlers"
 	"git.nathanblair.rocks/server/logging"
 )
 
-// Prefix is the name used to identify the service
-const Prefix = "app"
+const defaultServePath = "public"
+
+// Name is the name used to identify the service
+const Name = "app"
 
 // Handler handles App requests
 type Handler struct {
-	logger    *logging.Logger
-	servePath string
+	logger *logging.Logger
+	fsys   fs.FS
 }
 
-//go:embed 404.html
-var notFoundFile []byte
-
-const defaultServePath = "public"
-const indexFileName = "index.html"
-const indexFileLength = len(indexFileName) - 1
-
-func (handler *Handler) notFound(writer http.ResponseWriter, resource string, servePath string) {
-	handler.logger.Error("Could not read resource at: %v\n", resource)
-
-	indexStartIndex := len(resource) - 1 - indexFileLength
-	if indexStartIndex > 0 && resource[indexStartIndex:] == indexFileName {
-		writer.WriteHeader(http.StatusNotFound)
-		if _, err := writer.Write(notFoundFile); err != nil {
-			handler.logger.Error("%v", err)
-			http.Error(writer, fmt.Sprintf("Could not retrieve %v", resource), http.StatusInternalServerError)
-		}
-		return
-	}
-
-	http.Error(writer, "Resource Not Found", http.StatusNotFound)
-}
-
-// ServeHTTP fulfills the http.Handler contract for Handler
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	resourcePath := request.URL.Path
-	if filepath.Ext(resourcePath) == "" {
-		resourcePath = fmt.Sprintf("%v/%v", strings.TrimSuffix(resourcePath, "/"), indexFileName)
+	handler.logger.Info("(%v) %v %v\n", request.Host, request.Method, request.URL.Path)
+	requestPath := strings.TrimPrefix(request.URL.Path, fmt.Sprintf("/%v/", Name))
+	if filepath.Ext(requestPath) == "" {
+		requestPath = "index.html"
 	}
 
-	response, err := os.ReadFile(fmt.Sprintf("%v/%v", handler.servePath, resourcePath))
+	file, err := handler.fsys.Open(requestPath)
 	if err != nil {
-		handler.notFound(writer, resourcePath, handler.servePath)
+		handler.logger.Error("Could not open resource at: %v\n", requestPath)
+		http.Error(writer, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	if _, err = writer.Write(response); err != nil {
+	stats, err := file.Stat()
+	if err != nil {
+		handler.logger.Error("Could not stat resource at: %v\n", requestPath)
+		http.Error(writer, err.Error(), http.StatusNoContent)
+		return
+	}
+
+	contents := make([]byte, stats.Size())
+	_, err = file.Read(contents)
+	if err != nil {
+		handler.logger.Error("Could not read resource at: %v\n", requestPath)
+		http.Error(writer, err.Error(), http.StatusNoContent)
+		return
+	}
+
+	if _, err = writer.Write(contents); err != nil {
 		handler.logger.Error("Could not write response: %v", err)
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 // New returns a new Handler
-func New() *Handler {
-	servePath, isSet := os.LookupEnv("APP_SERVE_PATH")
-	if !isSet {
-		servePath = defaultServePath
-	}
+func New(fsys fs.FS) (handler *Handler, err error) {
+	logger := logging.New(Name)
+	handler = &Handler{logger, fsys}
 
-	return &Handler{
-		logger:    logging.New(Prefix),
-		servePath: servePath,
-	}
+	handlers.Register(Name, handler, logger)
+
+	return
 }
