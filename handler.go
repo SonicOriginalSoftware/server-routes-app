@@ -20,7 +20,7 @@ const Name = "app"
 
 // Handler handles App requests
 type Handler struct {
-	logger *logging.Logger
+	logger logging.Log
 	fsys   fs.FS
 }
 
