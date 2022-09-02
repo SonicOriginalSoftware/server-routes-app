@@ -9,8 +9,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"git.nathanblair.rocks/routes/app"
-	lib "git.nathanblair.rocks/server"
+	"git.sonicoriginal.software/routes/app"
+	lib "git.sonicoriginal.software/server"
 )
 
 var (

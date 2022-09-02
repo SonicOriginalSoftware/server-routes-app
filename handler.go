@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"git.nathanblair.rocks/server/handlers"
-	"git.nathanblair.rocks/server/logging"
+	"git.sonicoriginal.software/server/handlers"
+	"git.sonicoriginal.software/server/logging"
 )
 
 const defaultServePath = "public"
@@ -63,7 +63,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 func New(fsys fs.FS) (handler *Handler, err error) {
 	logger := logging.New(Name)
 	handler = &Handler{logger, fsys}
-	handlers.Register(Name, handler, logger)
+	handlers.Register(Name, "", Name, handler, logger)
 
 	return
 }
