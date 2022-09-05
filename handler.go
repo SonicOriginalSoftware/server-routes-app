@@ -25,7 +25,7 @@ type Handler struct {
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	handler.logger.Info("(%v) %v %v\n", request.Host, request.Method, request.URL.Path)
+	handler.logger.Info("%v %v\n", request.Method, request.URL.Path)
 	requestPath := strings.TrimPrefix(request.URL.Path, fmt.Sprintf("/%v/", Name))
 	if filepath.Ext(requestPath) == "" {
 		requestPath = "index.html"
