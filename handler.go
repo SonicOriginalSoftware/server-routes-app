@@ -5,6 +5,7 @@ package app
 import (
 	"fmt"
 	"io/fs"
+	"mime"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -52,6 +53,10 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 		http.Error(writer, err.Error(), http.StatusNoContent)
 		return
 	}
+
+	fileExtension := filepath.Ext(requestPath)
+	contentType := mime.TypeByExtension(fileExtension)
+	writer.Header().Set("Content-Type", contentType)
 
 	if _, err = writer.Write(contents); err != nil {
 		handler.logger.Error("Could not write response: %v", err)
