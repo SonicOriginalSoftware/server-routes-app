@@ -14,8 +14,6 @@ import (
 	"git.sonicoriginal.software/server/logging"
 )
 
-const defaultServePath = "public"
-
 // Name is the name used to identify the service
 const Name = "app"
 

@@ -52,9 +52,7 @@ func TestHandler(t *testing.T) {
 	}
 
 	ctx, cancelFunction := context.WithCancel(context.Background())
-
-	exitCode, address := lib.Run(ctx, certs)
-	defer close(exitCode)
+	address, errChan := lib.Run(ctx, certs)
 
 	url := fmt.Sprintf("http://%v/%v/", address, app.Name)
 	response, err := http.DefaultClient.Get(url)
@@ -64,9 +62,11 @@ func TestHandler(t *testing.T) {
 
 	cancelFunction()
 
-	if returnCode := <-exitCode; returnCode != 0 {
-		t.Fatalf("Server errored: %v", returnCode)
+	if err := <-errChan; err != nil {
+		t.Fatalf("Server errored: %v", err)
 	}
+
+	// TODO Check the http response text is what we expect?
 
 	if response.Status != http.StatusText(http.StatusOK) && response.StatusCode != http.StatusOK {
 		t.Fatalf("Server returned: %v", response.Status)
