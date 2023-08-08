@@ -4,57 +4,39 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
-	"strings"
 	"testing"
 	"testing/fstest"
 
-	"git.sonicoriginal.software/routes/app"
-	lib "git.sonicoriginal.software/server"
+	"git.sonicoriginal.software/routes/app.git"
+	"git.sonicoriginal.software/server.git/v2"
+)
+
+const (
+	portEnvKey       = "TEST_PORT"
+	htmlFileContents = `<html><head></head><body>hello</body></html>`
 )
 
 var (
-	certs            []tls.Certificate
-	rootPath         = ""
-	cssFileContents  = `* { padding: 0; margin: 0; }`
-	jsFileContents   = `console.log("Hello, world!")`
-	htmlFileContents = `<!DOCTYPE html>
-<html lang="en-US">
-  <head>
-    <meta charset="utf-8" />
-    <title>Demo Page</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
-    <script src="main.js"></script>
-  </head>
-  <body></body>
-</html>`
-
-	filesystem = fstest.MapFS{
-		fmt.Sprintf("%vindex.html", rootPath): &fstest.MapFile{
-			Data: []byte(htmlFileContents),
-		},
-		fmt.Sprintf("%vmain.css", rootPath): &fstest.MapFile{
-			Data: []byte(cssFileContents),
-		},
-		fmt.Sprintf("%vmain.js", rootPath): &fstest.MapFile{
-			Data: []byte(jsFileContents),
-		},
-	}
+	certs      []tls.Certificate
+	filesystem = fstest.MapFS{"index.html": &fstest.MapFile{Data: []byte(htmlFileContents)}}
 )
 
 func TestHandler(t *testing.T) {
-	route := fmt.Sprintf("localhost/%v/", app.Name)
-	t.Setenv(fmt.Sprintf("%v_SERVE_ADDRESS", strings.ToUpper(app.Name)), route)
+	route := app.New(filesystem, nil)
 
-	if _, err := app.New(filesystem); err != nil {
-		t.Fatalf("%v\n", err)
-	}
+	t.Logf("Handler registered for route [%v]\n", route)
 
 	ctx, cancelFunction := context.WithCancel(context.Background())
-	address, errChan := lib.Run(ctx, certs)
+	address, serverErrorChannel := server.Run(ctx, &certs, nil, portEnvKey)
 
-	url := fmt.Sprintf("http://%v/%v/", address, app.Name)
+	t.Logf("Serving on [%v]\n", address)
+
+	url := fmt.Sprintf("http://%v%v", address, route)
+
+	t.Logf("Requesting [%v]\n", url)
+
 	response, err := http.DefaultClient.Get(url)
 	if err != nil {
 		t.Fatalf("%v\n", err)
@@ -62,13 +44,33 @@ func TestHandler(t *testing.T) {
 
 	cancelFunction()
 
-	if err := <-errChan; err != nil {
-		t.Fatalf("Server errored: %v", err)
+	serverError := <-serverErrorChannel
+	if serverError.Close != nil {
+		t.Fatalf("Error closing server: %v", serverError.Close.Error())
+	}
+	contextError := serverError.Context.Error()
+
+	t.Logf("%v\n", contextError)
+
+	if contextError != server.ErrContextCancelled.Error() {
+		t.Fatalf("Server failed unexpectedly: %v", contextError)
 	}
 
-	// TODO Check the http response text is what we expect?
+	t.Log("Response:")
+	t.Logf("  Status code: %v", response.StatusCode)
+	t.Logf("  Status text: %v", response.Status)
 
 	if response.Status != http.StatusText(http.StatusOK) && response.StatusCode != http.StatusOK {
 		t.Fatalf("Server returned: %v", response.Status)
 	}
+
+	responseBody, err := io.ReadAll(response.Body)
+	responseFormatted := string(responseBody)
+	if err != nil {
+		t.Fatalf("Could not read response: %v", err)
+	} else if responseFormatted != htmlFileContents {
+		t.Fatalf("%v != %v", responseFormatted, htmlFileContents)
+	}
+
+	t.Logf("  Body:\n%v", responseFormatted)
 }

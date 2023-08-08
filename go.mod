@@ -1,10 +1,8 @@
-module git.sonicoriginal.software/routes/app
+module git.sonicoriginal.software/routes/app.git
 
 go 1.19
 
-require git.sonicoriginal.software/server v0.0.0
-
-replace (
-	git.sonicoriginal.software/routes/app => github.com/SonicOriginalSoftware/server-routes-app v0.0.0
-	git.sonicoriginal.software/server => github.com/SonicOriginalSoftware/server v0.0.0
+require (
+	git.sonicoriginal.software/logger.git v1.0.2
+	git.sonicoriginal.software/server.git/v2 v2.0.0-rc6
 )
