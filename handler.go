@@ -71,9 +71,5 @@ func New(fsys fs.FS, mux *http.ServeMux) (route string) {
 		os.Stderr,
 	)
 
-	if mux == nil {
-		mux = http.DefaultServeMux
-	}
-
 	return server.RegisterHandler(name, &handler{logger, fsys}, mux)
 }

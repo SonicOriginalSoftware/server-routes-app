@@ -20,16 +20,17 @@ const (
 
 var (
 	certs      []tls.Certificate
-	filesystem = fstest.MapFS{"index.html": &fstest.MapFile{Data: []byte(htmlFileContents)}}
+	filesystem                = fstest.MapFS{"index.html": &fstest.MapFile{Data: []byte(htmlFileContents)}}
+	mux        *http.ServeMux = nil
 )
 
 func TestHandler(t *testing.T) {
-	route := app.New(filesystem, nil)
+	route := app.New(filesystem, mux)
 
 	t.Logf("Handler registered for route [%v]\n", route)
 
 	ctx, cancelFunction := context.WithCancel(context.Background())
-	address, serverErrorChannel := server.Run(ctx, &certs, nil, portEnvKey)
+	address, serverErrorChannel := server.Run(ctx, &certs, mux, portEnvKey)
 
 	t.Logf("Serving on [%v]\n", address)
 
