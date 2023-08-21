@@ -9,7 +9,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"git.sonicoriginal.software/routes/app.git"
+	app "git.sonicoriginal.software/server-routes-app.git"
 	"git.sonicoriginal.software/server.git/v2"
 )
 
